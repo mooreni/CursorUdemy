@@ -1,0 +1,128 @@
+---
+alwaysApply: true
+---
+# Database Interactions with Drizzle
+
+All database interactions in this project MUST use Drizzle ORM with the defined schema and proper query patterns.
+
+## Required Practices
+
+### 1. Schema Import
+Always import the schema from the centralized schema file:
+```typescript
+import { decksTable, cardsTable } from '@/db/schema';
+```
+
+### 2. Database Connection
+Import the database connection (when available):
+```typescript
+import { db } from '@/db'; // or wherever the db instance is configured
+```
+
+### 3. Query Patterns
+Use Drizzle's query API for all database operations:
+
+**SELECT Operations:**
+```typescript
+// Get all decks for a user
+const userDecks = await db.select().from(decksTable).where(eq(decksTable.userId, userId));
+
+// Get deck with cards
+const deckWithCards = await db.select()
+  .from(decksTable)
+  .leftJoin(cardsTable, eq(decksTable.id, cardsTable.deckId))
+  .where(eq(decksTable.id, deckId));
+```
+
+**INSERT Operations:**
+```typescript
+// Insert new deck
+const [newDeck] = await db.insert(decksTable).values({
+  title: 'New Deck',
+  description: 'Deck description',
+  userId: userId
+}).returning();
+
+// Insert new card
+const [newCard] = await db.insert(cardsTable).values({
+  front: 'Question',
+  back: 'Answer',
+  deckId: deckId
+}).returning();
+```
+
+**UPDATE Operations:**
+```typescript
+// Update deck
+const [updatedDeck] = await db.update(decksTable)
+  .set({ title: 'Updated Title', updatedAt: new Date() })
+  .where(eq(decksTable.id, deckId))
+  .returning();
+```
+
+**DELETE Operations:**
+```typescript
+// Delete card (deck cascade will handle cards automatically)
+await db.delete(cardsTable).where(eq(cardsTable.id, cardId));
+
+// Delete deck (cascades to cards)
+await db.delete(decksTable).where(eq(decksTable.id, deckId));
+```
+
+### 4. Type Safety
+Always use Drizzle's type inference for type-safe database operations:
+```typescript
+type Deck = typeof decksTable.$inferSelect;
+type NewDeck = typeof decksTable.$inferInsert;
+type Card = typeof cardsTable.$inferSelect;
+type NewCard = typeof cardsTable.$inferInsert;
+```
+
+### 5. Relations and Joins
+Use Drizzle's relational queries when working with related data:
+```typescript
+// Example of proper join query
+const decksWithCardCount = await db
+  .select({
+    id: decksTable.id,
+    title: decksTable.title,
+    cardCount: sql<number>`count(${cardsTable.id})`.as('cardCount')
+  })
+  .from(decksTable)
+  .leftJoin(cardsTable, eq(decksTable.id, cardsTable.deckId))
+  .groupBy(decksTable.id);
+```
+
+## Forbidden Practices
+
+❌ **DO NOT** use raw SQL queries unless absolutely necessary
+❌ **DO NOT** bypass the schema definitions
+❌ **DO NOT** use other ORM libraries or database clients
+❌ **DO NOT** perform database operations without proper type checking
+❌ **DO NOT** forget to handle errors and edge cases
+
+## Schema Reference
+
+Current schema includes:
+- **decksTable**: Stores flashcard decks with `id`, `title`, `description`, `userId`, `createdAt`, `updatedAt`
+- **cardsTable**: Stores individual cards with `id`, `front`, `back`, `deckId`, `createdAt`, `updatedAt`
+
+Refer to [schema.ts](mdc:src/db/schema.ts) for the complete schema definition.
+
+## Error Handling
+
+Always wrap database operations in try-catch blocks and handle errors appropriately:
+```typescript
+try {
+  const deck = await db.select().from(decksTable).where(eq(decksTable.id, deckId));
+  if (!deck.length) {
+    throw new Error('Deck not found');
+  }
+  return deck[0];
+} catch (error) {
+  console.error('Database error:', error);
+  throw error;
+}
+```
+
+This rule ensures consistency, type safety, and maintainability across all database interactions in the project.

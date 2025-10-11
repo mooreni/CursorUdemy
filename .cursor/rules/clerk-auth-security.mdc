@@ -1,0 +1,261 @@
+---
+alwaysApply: true
+---
+
+# Clerk Authentication & Data Security
+
+All authentication in this project is handled by **Clerk**. It is **CRITICAL** that users can only access their own data and never access data belonging to other users.
+
+## Required Security Practices
+
+### 1. User ID Extraction
+Always extract the user ID from Clerk's auth context:
+
+**Server Components & API Routes:**
+```typescript
+import { auth } from "@clerk/nextjs/server";
+
+export async function GET() {
+  const { userId } = await auth();
+  
+  if (!userId) {
+    return new Response("Unauthorized", { status: 401 });
+  }
+  
+  // Use userId for data filtering
+}
+```
+
+**Client Components:**
+```typescript
+import { useUser } from "@clerk/nextjs";
+
+export function MyComponent() {
+  const { user, isLoaded } = useUser();
+  
+  if (!isLoaded || !user) {
+    return <div>Loading...</div>;
+  }
+  
+  // Use user.id for data operations
+}
+```
+
+### 2. Database Query Security
+**ALWAYS** filter database queries by the authenticated user ID:
+
+```typescript
+import { auth } from "@clerk/nextjs/server";
+import { db } from "@/db";
+import { decksTable, cardsTable } from "@/db/schema";
+import { eq, and } from "drizzle-orm";
+
+// ✅ CORRECT: Filter by userId
+export async function getUserDecks() {
+  const { userId } = await auth();
+  if (!userId) throw new Error("Unauthorized");
+  
+  return await db.select()
+    .from(decksTable)
+    .where(eq(decksTable.userId, userId));
+}
+
+// ✅ CORRECT: Double-check ownership for related data
+export async function getUserCard(cardId: string) {
+  const { userId } = await auth();
+  if (!userId) throw new Error("Unauthorized");
+  
+  return await db.select()
+    .from(cardsTable)
+    .leftJoin(decksTable, eq(cardsTable.deckId, decksTable.id))
+    .where(and(
+      eq(cardsTable.id, cardId),
+      eq(decksTable.userId, userId) // Ensure card belongs to user's deck
+    ));
+}
+```
+
+### 3. API Route Protection
+**ALWAYS** verify user authentication and ownership in API routes:
+
+```typescript
+import { auth } from "@clerk/nextjs/server";
+import { NextRequest } from "next/server";
+
+export async function GET(request: NextRequest) {
+  const { userId } = await auth();
+  
+  if (!userId) {
+    return new Response("Unauthorized", { status: 401 });
+  }
+  
+  // Extract resource ID from URL/params
+  const resourceId = request.nextUrl.searchParams.get("id");
+  
+  // Verify ownership before returning data
+  const resource = await db.select()
+    .from(resourceTable)
+    .where(and(
+      eq(resourceTable.id, resourceId),
+      eq(resourceTable.userId, userId)
+    ));
+    
+  if (!resource.length) {
+    return new Response("Not found", { status: 404 });
+  }
+  
+  return Response.json(resource[0]);
+}
+```
+
+### 4. Server Actions Security
+Protect all Server Actions with proper auth checks:
+
+```typescript
+"use server";
+
+import { auth } from "@clerk/nextjs/server";
+import { revalidatePath } from "next/cache";
+
+export async function createDeck(formData: FormData) {
+  const { userId } = await auth();
+  
+  if (!userId) {
+    throw new Error("Unauthorized");
+  }
+  
+  const title = formData.get("title") as string;
+  
+  const [newDeck] = await db.insert(decksTable).values({
+    title,
+    userId, // Always associate with current user
+    createdAt: new Date(),
+    updatedAt: new Date()
+  }).returning();
+  
+  revalidatePath("/decks");
+  return newDeck;
+}
+```
+
+### 5. Client-Side Protection
+Protect client components and pages:
+
+```typescript
+import { useUser } from "@clerk/nextjs";
+import { redirect } from "next/navigation";
+
+export function ProtectedComponent() {
+  const { user, isLoaded } = useUser();
+  
+  if (!isLoaded) {
+    return <div>Loading...</div>;
+  }
+  
+  if (!user) {
+    redirect("/sign-in");
+  }
+  
+  // Component logic with authenticated user
+  return <div>Protected content for {user.id}</div>;
+}
+```
+
+## Forbidden Security Anti-Patterns
+
+❌ **NEVER** fetch data without user ID filtering:
+```typescript
+// BAD: Returns all decks for all users
+const allDecks = await db.select().from(decksTable);
+```
+
+❌ **NEVER** trust client-provided user IDs:
+```typescript
+// BAD: Client could manipulate userId
+export async function deleteDecks(userId: string) {
+  // Don't trust this userId from client
+}
+```
+
+❌ **NEVER** skip authentication checks:
+```typescript
+// BAD: No auth verification
+export async function GET() {
+  return await db.select().from(decksTable);
+}
+```
+
+❌ **NEVER** use optional auth in sensitive operations:
+```typescript
+// BAD: Should be required, not optional
+const { userId } = await auth(); // Could be null
+await db.delete(decksTable).where(eq(decksTable.id, deckId));
+```
+
+## Required Patterns
+
+### 1. Resource Ownership Verification
+Before any CRUD operation, verify the resource belongs to the authenticated user:
+
+```typescript
+async function verifyDeckOwnership(deckId: string, userId: string) {
+  const deck = await db.select()
+    .from(decksTable)
+    .where(and(
+      eq(decksTable.id, deckId),
+      eq(decksTable.userId, userId)
+    ));
+    
+  if (!deck.length) {
+    throw new Error("Deck not found or access denied");
+  }
+  
+  return deck[0];
+}
+```
+
+### 2. Nested Resource Security
+For resources with relationships (cards in decks), always verify through the ownership chain:
+
+```typescript
+async function verifyCardAccess(cardId: string, userId: string) {
+  const result = await db.select()
+    .from(cardsTable)
+    .leftJoin(decksTable, eq(cardsTable.deckId, decksTable.id))
+    .where(and(
+      eq(cardsTable.id, cardId),
+      eq(decksTable.userId, userId)
+    ));
+    
+  if (!result.length) {
+    throw new Error("Card not found or access denied");
+  }
+  
+  return result[0];
+}
+```
+
+### 3. Error Handling
+Return appropriate HTTP status codes:
+- `401 Unauthorized` - No valid authentication
+- `403 Forbidden` - Authenticated but no permission
+- `404 Not Found` - Resource doesn't exist OR user doesn't own it (don't reveal existence)
+
+## Clerk Integration Requirements
+
+1. **Install required packages:**
+   ```bash
+   npm install @clerk/nextjs
+   ```
+
+2. **Configure environment variables:**
+   ```env
+   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_...
+   CLERK_SECRET_KEY=sk_...
+   ```
+
+3. **Wrap app with ClerkProvider** in [layout.tsx](mdc:src/app/layout.tsx)
+
+4. **Use Clerk middleware** in [middleware.ts](mdc:src/middleware.ts) for route protection
+
+This rule ensures that every database operation, API route, and component interaction maintains proper user isolation and data security.
