@@ -1,35 +1,55 @@
-export default function Home() {
-  return (
-    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-189px)] px-4 text-center">
-      <div className="max-w-4xl mx-auto space-y-8">
-        {/* Main Heading */}
-        <div className="space-y-4">
-          <h1 className="text-4xl md:text-6xl font-bold text-foreground">
-            Welcome to{" "}
-            <span className="bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">
-              FlashCards
-            </span>
-          </h1>
-          <div className="space-y-2 text-lg text-muted-foreground max-w-2xl mx-auto">
-            <p>Master any subject with our interactive flashcard learning system.</p>
-            <p>Create, study, and track your progress all in one place.</p>
-          </div>
-        </div>
+import {
+  SignInButton,
+  SignUpButton,
+  SignedOut,
+} from "@clerk/nextjs";
+import { auth } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
-        {/* Call to Action Card */}
-        <div className="bg-slate-800 border border-slate-700 rounded-lg p-8 max-w-md mx-auto">
-          <h2 className="text-2xl font-semibold mb-4 text-white">Get Started Today</h2>
-          <div className="space-y-4">
-            <p className="text-slate-300">
-              Sign up or sign in to start creating your personalized flashcard decks.
-            </p>
-            <div className="flex items-center justify-center gap-1 text-sm text-slate-400">
-              <span>Click the buttons in the header above to get started</span>
-              <span>👆</span>
+export default async function Home() {
+  const { userId } = await auth();
+  
+  // If user is logged in, redirect to dashboard
+  if (userId) {
+    redirect("/dashboard");
+  }
+  return (
+    <div className="flex items-center justify-center min-h-[calc(100vh-189px)] px-4">
+      <Card className="w-full max-w-md text-center">
+        <CardHeader className="space-y-4">
+          <CardTitle className="text-4xl md:text-6xl font-bold">
+            FlashCards
+          </CardTitle>
+          <CardDescription className="text-xl md:text-2xl">
+            Your personal flashcard platform
+          </CardDescription>
+        </CardHeader>
+        
+        <CardContent>
+          <SignedOut>
+            <div className="flex flex-col gap-4 sm:flex-row sm:justify-center">
+              <SignInButton mode="modal">
+                <Button variant="default" size="lg" className="w-full sm:w-auto">
+                  Sign In
+                </Button>
+              </SignInButton>
+              <SignUpButton mode="modal">
+                <Button variant="secondary" size="lg" className="w-full sm:w-auto">
+                  Sign Up
+                </Button>
+              </SignUpButton>
             </div>
-          </div>
-        </div>
-      </div>
+          </SignedOut>
+        </CardContent>
+      </Card>
     </div>
   );
 }
