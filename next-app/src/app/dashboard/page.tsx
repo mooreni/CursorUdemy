@@ -1,4 +1,3 @@
-import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getDashboardStats, getRecentDecks } from "@/lib/actions/dashboard-actions";
@@ -9,17 +8,12 @@ import { Separator } from "@/components/ui/separator";
 import { Plus, BookOpen, Calendar, BarChart3 } from "lucide-react";
 
 export default async function DashboardPage() {
-  const { userId } = await auth();
-  
-  if (!userId) {
-    redirect("/sign-in");
-  }
+  try {
+    // Fetch dashboard data (authentication handled in helper functions)
+    const stats = await getDashboardStats();
+    const recentDecks = await getRecentDecks();
 
-  // Fetch dashboard data
-  const stats = await getDashboardStats();
-  const recentDecks = await getRecentDecks();
-
-  return (
+    return (
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-4xl mx-auto">
         <header className="mb-8">
@@ -157,5 +151,12 @@ export default async function DashboardPage() {
         </div>
       </div>
     </div>
-  );
+    );
+  } catch (error) {
+    // Handle authentication errors by redirecting to home
+    if (error instanceof Error && error.message === "Unauthorized") {
+      redirect("/");
+    }
+    throw error; // Re-throw other errors
+  }
 }

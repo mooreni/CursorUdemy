@@ -153,7 +153,7 @@ export function ProtectedComponent() {
   }
   
   if (!user) {
-    redirect("/sign-in");
+    redirect("/");
   }
   
   // Component logic with authenticated user

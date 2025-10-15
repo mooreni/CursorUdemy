@@ -3,8 +3,6 @@ import {
   SignUpButton,
   SignedOut,
 } from "@clerk/nextjs";
-import { auth } from "@clerk/nextjs/server";
-import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -15,12 +13,7 @@ import {
 } from "@/components/ui/card";
 
 export default async function Home() {
-  const { userId } = await auth();
-  
-  // If user is logged in, redirect to dashboard
-  if (userId) {
-    redirect("/dashboard");
-  }
+  // Authentication and redirects are now handled by middleware
   return (
     <div className="flex items-center justify-center min-h-[calc(100vh-189px)] px-4">
       <Card className="w-full max-w-md text-center">
