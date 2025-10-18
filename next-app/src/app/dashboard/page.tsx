@@ -1,16 +1,16 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { getDashboardStats, getRecentDecks } from "@/lib/actions/dashboard-actions";
+import { getRecentDecks } from "@/lib/actions/dashboard-actions";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Plus, BookOpen, Calendar, BarChart3 } from "lucide-react";
+import { Plus, BookOpen } from "lucide-react";
+import { truncateText } from "@/lib/utils";
 
 export default async function DashboardPage() {
   try {
     // Fetch dashboard data (authentication handled in helper functions)
-    const stats = await getDashboardStats();
     const recentDecks = await getRecentDecks();
 
     return (
@@ -21,40 +21,57 @@ export default async function DashboardPage() {
           <p className="text-muted-foreground">Welcome to your dashboard</p>
         </header>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Stats Cards */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Decks</CardTitle>
-              <BookOpen className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalDecks}</div>
-              <p className="text-xs text-muted-foreground">Flashcard decks created</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Cards</CardTitle>
-              <BarChart3 className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalCards}</div>
-              <p className="text-xs text-muted-foreground">Cards in all decks</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Study Sessions</CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.studySessions}</div>
-              <p className="text-xs text-muted-foreground">Sessions this week</p>
-            </CardContent>
-          </Card>
+        {/* Recent Decks */}
+        <div className="mt-8">
+          <h2 className="text-2xl font-bold mb-4">Recent Decks</h2>
+          {recentDecks.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {recentDecks.map((deck) => (
+                <Card key={deck.id} className="hover:shadow-md transition-shadow h-[200px] flex flex-col">
+                  <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-4 flex-shrink-0 h-[60px]">
+                    <CardTitle className="text-sm font-medium line-clamp-2 flex-1 mr-2">
+                      {deck.title}
+                    </CardTitle>
+                    <Badge variant="secondary" className="text-xs flex-shrink-0">
+                      {deck.cardCount} {deck.cardCount === 1 ? 'card' : 'cards'}
+                    </Badge>
+                  </CardHeader>
+                  
+                  <CardContent className="pb-2 flex-1 flex flex-col justify-between min-h-0">
+                     <CardDescription className="text-xs text-muted-foreground mt-2">
+                        {truncateText(deck.description || 'No description available', 73)}
+                      </CardDescription>
+                  </CardContent>
+                  
+                  <CardFooter className="flex flex-col items-start gap-2 flex-shrink-0 pt-2">
+                    <div className="text-xs text-muted-foreground">
+                      Created {new Date(deck.createdAt).toLocaleDateString()}
+                    </div>
+                     <Button asChild size="sm" className="w-full">
+                       <Link href={`/decks/${deck.id}`}>
+                         Study
+                       </Link>
+                     </Button>
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="p-6">
+                <div className="text-center py-8">
+                  <BookOpen className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground mb-4">No decks found. Create your first deck to get started!</p>
+                  <Button asChild variant="default">
+                    <Link href="/decks/create">
+                      <Plus className="mr-2 h-4 w-4" />
+                      Create Your First Deck
+                    </Link>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         <Separator className="my-8" />
@@ -97,57 +114,6 @@ export default async function DashboardPage() {
               </CardContent>
             </Card>
           </div>
-        </div>
-
-        <Separator className="my-8" />
-
-        {/* Recent Decks */}
-        <div className="mt-8">
-          <h2 className="text-2xl font-bold mb-4">Recent Decks</h2>
-          <Card>
-            <CardContent className="p-6">
-              {recentDecks.length > 0 ? (
-                <div className="space-y-4">
-                  {recentDecks.map((deck) => (
-                    <Card key={deck.id} className="hover:shadow-md transition-shadow">
-                      <CardContent className="flex justify-between items-start p-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <h3 className="font-semibold">{deck.title}</h3>
-                            <Badge variant="secondary">
-                              {deck.cardCount} {deck.cardCount === 1 ? 'card' : 'cards'}
-                            </Badge>
-                          </div>
-                          {deck.description && (
-                            <p className="text-muted-foreground text-sm mt-1 mb-2">{deck.description}</p>
-                          )}
-                          <p className="text-muted-foreground text-xs">
-                            Created {new Date(deck.createdAt).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <Button asChild size="sm" variant="outline">
-                          <Link href={`/decks/${deck.id}/study`}>
-                            Study
-                          </Link>
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <BookOpen className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground mb-4">No decks found. Create your first deck to get started!</p>
-                  <Button asChild variant="default">
-                    <Link href="/decks/create">
-                      <Plus className="mr-2 h-4 w-4" />
-                      Create Your First Deck
-                    </Link>
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
         </div>
       </div>
     </div>
