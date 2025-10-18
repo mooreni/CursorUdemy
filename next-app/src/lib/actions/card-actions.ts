@@ -43,13 +43,11 @@ export async function updateCardAction(input: UpdateCardInput) {
 
 export async function deleteCardAction(cardId: number) {
   try {
-    // First get the card to know which deck to revalidate
-    const { getDeckById } = await import("@/db/queries/deck-queries");
+    const deckId = await deleteCard(cardId); // Using helper function - now returns deckId
     
-    await deleteCard(cardId); // Using helper function
+    // Revalidate the specific deck page to update the UI immediately
+    revalidatePath(`/decks/${deckId}`);
     
-    // Note: We can't easily get the deckId after deletion, so we'll revalidate broadly
-    // In a real app, you might want to return deckId from the deleteCard helper
     return { success: true };
   } catch (error) {
     console.error("Error deleting card:", error);

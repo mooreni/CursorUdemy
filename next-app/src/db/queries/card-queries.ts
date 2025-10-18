@@ -1,7 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/db";
 import { cardsTable, decksTable } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 import { z } from "zod";
 
 // Types
@@ -79,7 +79,7 @@ export async function getDeckCards(deckId: number): Promise<Card[]> {
   return await db.select()
     .from(cardsTable)
     .where(eq(cardsTable.deckId, deckId))
-    .orderBy(cardsTable.createdAt);
+    .orderBy(desc(cardsTable.updatedAt));
 }
 
 /**
@@ -161,8 +161,9 @@ export async function updateCard(input: UpdateCardInput): Promise<Card> {
 /**
  * Delete a card owned by the authenticated user
  * @param cardId The ID of the card to delete
+ * @returns The deckId of the deleted card for revalidation purposes
  */
-export async function deleteCard(cardId: number): Promise<void> {
+export async function deleteCard(cardId: number): Promise<number> {
   const { userId } = await auth();
   
   if (!userId) {
@@ -179,4 +180,7 @@ export async function deleteCard(cardId: number): Promise<void> {
   await db.update(decksTable)
     .set({ updatedAt: new Date() })
     .where(eq(decksTable.id, existingCard.deckId));
+    
+  // Return deckId for revalidation
+  return existingCard.deckId;
 }

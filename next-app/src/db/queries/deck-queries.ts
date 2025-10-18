@@ -1,7 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/db";
 import { decksTable, cardsTable } from "@/db/schema";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, sql, desc } from "drizzle-orm";
 import { z } from "zod";
 
 // Types
@@ -117,7 +117,8 @@ export async function getDeckWithCards(deckId: number) {
     .where(and(
       eq(decksTable.id, deckId),
       eq(decksTable.userId, userId)
-    ));
+    ))
+    .orderBy(desc(cardsTable.updatedAt));
 
   if (!deck.length) {
     throw new Error("Deck not found");

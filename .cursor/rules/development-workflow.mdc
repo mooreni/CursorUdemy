@@ -1,0 +1,110 @@
+---
+alwaysApply: true
+description: Development workflow and command execution guidelines
+---
+
+# Development Workflow
+
+## Command Execution Rules
+
+**NEVER use chained commands with `&&` for development tasks.** Always execute commands step by step for better error handling and debugging.
+
+### ❌ FORBIDDEN Command Patterns
+
+```bash
+cd next-app && npm run dev
+cd next-app && npm install package-name
+cd next-app && npm run build && npm start
+```
+
+### ✅ REQUIRED Command Patterns
+
+**Step 1: Navigate to the next-app directory**
+```bash
+cd next-app
+```
+
+**Step 2: Execute the specific command**
+```bash
+npm run dev
+```
+
+**Or for other operations:**
+```bash
+npm install package-name
+npm run build
+npm run lint
+npx shadcn@latest add button
+```
+
+## Development Server
+
+To start the development server:
+
+1. **Navigate to project directory:**
+   ```bash
+   cd next-app
+   ```
+
+2. **Start development server:**
+   ```bash
+   npm run dev
+   ```
+
+## Package Management
+
+To install new packages:
+
+1. **Navigate to project directory:**
+   ```bash
+   cd next-app
+   ```
+
+2. **Install packages:**
+   ```bash
+   npm install package-name
+   # or for shadcn/ui components
+   npx shadcn@latest add component-name
+   ```
+
+## Database Operations
+
+For Drizzle operations:
+
+1. **Navigate to project directory:**
+   ```bash
+   cd next-app
+   ```
+
+2. **Run database commands:**
+   ```bash
+   npm run db:generate    # Generate migrations
+   npm run db:push        # Push to database
+   npm run db:studio      # Open Drizzle Studio
+   ```
+
+## Build and Production
+
+For production builds:
+
+1. **Navigate to project directory:**
+   ```bash
+   cd next-app
+   ```
+
+2. **Build application:**
+   ```bash
+   npm run build
+   ```
+
+3. **Start production server:**
+   ```bash
+   npm start
+   ```
+
+## Benefits of Step-by-Step Execution
+
+- **Better error isolation:** If navigation fails, you know immediately
+- **Clearer debugging:** Each step can be verified independently  
+- **Environment persistence:** Stay in the correct directory for multiple commands
+- **Command history:** Each command is logged separately for easier troubleshooting

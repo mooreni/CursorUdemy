@@ -5,10 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { AddCardDialog } from "@/components/AddCardDialog";
 import { EditDeckDialog } from "@/components/EditDeckDialog";
-import { ArrowLeft, BookOpen, Plus, Eye } from "lucide-react";
+import { FlashcardModal } from "@/components/FlashcardModal";
+import { ArrowLeft, BookOpen, Plus } from "lucide-react";
 
 interface DeckPageProps {
   params: {
@@ -16,74 +17,19 @@ interface DeckPageProps {
   };
 }
 
-// Helper function to truncate text
-function truncateText(text: string, maxLength: number = 40): string {
-  if (text.length <= maxLength) return text;
-  return text.slice(0, maxLength) + "...";
-}
-
-// Component for individual cards with modal view
-function FlashcardModal({ card }: { card: { id: number; front: string; back: string; deckId: number; createdAt: Date; updatedAt: Date; } }) {
-  return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Card className="hover:shadow-md transition-shadow h-40 cursor-pointer group relative">
-          <CardContent className="p-4 h-full flex flex-col">
-            <div className="absolute top-2 right-2 z-10">
-              <Eye className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
-            </div>
-            <div className="h-1/2 flex flex-col justify-start mb-2">
-              <h4 className="font-semibold text-xs text-muted-foreground mb-1">FRONT</h4>
-              <p className="text-sm leading-tight flex-1">{truncateText(card.front)}</p>
-            </div>
-            <div className="h-1/2 flex flex-col justify-start">
-              <h4 className="font-semibold text-xs text-muted-foreground mb-1">BACK</h4>
-              <p className="text-sm leading-tight flex-1">{truncateText(card.back)}</p>
-            </div>
-          </CardContent>
-        </Card>
-      </DialogTrigger>
-      
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>Flashcard Details</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-6">
-          <div>
-            <h4 className="font-semibold text-sm text-muted-foreground mb-3">FRONT</h4>
-            <div className="bg-muted/30 rounded-lg p-4 border">
-              <p className="text-sm leading-relaxed">{card.front}</p>
-            </div>
-          </div>
-          <div>
-            <h4 className="font-semibold text-sm text-muted-foreground mb-3">BACK</h4>
-            <div className="bg-muted/30 rounded-lg p-4 border">
-              <p className="text-sm leading-relaxed">{card.back}</p>
-            </div>
-          </div>
-          <div className="text-xs text-muted-foreground pt-2 border-t">
-            Created {new Date(card.createdAt).toLocaleDateString()}
-            {card.updatedAt !== card.createdAt && (
-              <span> • Updated {new Date(card.updatedAt).toLocaleDateString()}</span>
-            )}
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
 
 export default async function DeckPage({ params }: DeckPageProps) {
   try {
-    const deckId = parseInt(params.deckId);
+    const { deckId } = await params;
+    const parsedDeckId = parseInt(deckId);
     
     // Validate that deckId is a valid number
-    if (isNaN(deckId)) {
+    if (isNaN(parsedDeckId)) {
       notFound();
     }
 
     // Fetch deck with cards (authentication handled in helper function)
-    const deckWithCards = await getDeckWithCards(deckId);
+    const deckWithCards = await getDeckWithCards(parsedDeckId);
 
     // Transform the data to separate deck info and cards
     const deck = deckWithCards[0]?.decks;
@@ -129,69 +75,46 @@ export default async function DeckPage({ params }: DeckPageProps) {
               </div>
             </div>
             
-            <div className="text-sm text-muted-foreground">
+            <div className="text-sm text-muted-foreground mb-4">
               Created {new Date(deck.createdAt).toLocaleDateString()}
               {deck.updatedAt !== deck.createdAt && (
                 <span> • Updated {new Date(deck.updatedAt).toLocaleDateString()}</span>
               )}
             </div>
+            
+            {cards.length > 0 && (
+              <Button asChild variant="default">
+                <Link href={`/decks/${deckId}/study`}>
+                  <BookOpen className="h-4 w-4 mr-2" />
+                  Start Study
+                </Link>
+              </Button>
+            )}
           </div>
-
-          {/* Study Actions */}
-          {cards.length > 0 && (
-            <>
-              <Separator className="mb-8" />
-              <div className="mb-8">
-                <h2 className="text-2xl font-bold mb-4">Study Options</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
-                  <Card className="hover:shadow-lg transition-shadow flex flex-col h-full">
-                    <CardHeader>
-                      <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                        <BookOpen className="h-5 w-5" />
-                        Study Mode
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="flex flex-col flex-grow">
-                      <CardDescription className="mb-4 flex-grow">
-                        Review all cards in this deck with flashcard-style studying
-                      </CardDescription>
-                      <Button asChild variant="default" className="w-full mt-auto">
-                        <Link href={`/decks/${deckId}/study`}>
-                          Start Studying
-                        </Link>
-                      </Button>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="hover:shadow-lg transition-shadow flex flex-col h-full">
-                    <CardHeader>
-                      <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                        <Plus className="h-5 w-5" />
-                        Manage Cards
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="flex flex-col flex-grow">
-                      <CardDescription className="mb-4 flex-grow">
-                        Add, edit, or remove cards from this deck
-                      </CardDescription>
-                      <Button asChild variant="secondary" className="w-full mt-auto">
-                        <Link href={`/decks/${deckId}/manage`}>
-                          Manage Cards
-                        </Link>
-                      </Button>
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
-              <Separator className="mb-8" />
-            </>
-          )}
 
           {/* Cards Section */}
           <div className="mb-8">
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-4 mb-6">
               <h2 className="text-2xl font-bold">Cards</h2>
-              <AddCardDialog deckId={deckId} />
+              <TooltipProvider delayDuration={0}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div>
+                      <AddCardDialog 
+                        deckId={parsedDeckId} 
+                        triggerButton={
+                          <Button size="sm" className="w-8 h-8 p-0">
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        }
+                      />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Add Card</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
 
             {cards.length > 0 ? (
@@ -209,7 +132,7 @@ export default async function DeckPage({ params }: DeckPageProps) {
                       This deck doesn't have any cards yet. Add your first card to get started!
                     </p>
                     <AddCardDialog 
-                      deckId={deckId} 
+                      deckId={parsedDeckId} 
                       triggerButton={
                         <Button variant="default">
                           <Plus className="mr-2 h-4 w-4" />

@@ -1,0 +1,47 @@
+---
+alwaysApply: true
+description: Project structure and location guidance
+---
+
+# Project Structure and Location
+
+## Critical Path Information
+
+**The actual Next.js application code is located in the `/next-app/` directory, NOT in the root.**
+
+All development commands, file operations, and navigation must account for this structure:
+
+- Root workspace: `C:\Dev\CursorUdemy\`
+- Next.js app location: `C:\Dev\CursorUdemy\next-app\`
+- Source code: `C:\Dev\CursorUdemy\next-app\src\`
+
+## File Path Guidelines
+
+When working with project files:
+
+**✅ CORRECT file paths:**
+- `next-app/src/app/page.tsx`
+- `next-app/src/components/ui/button.tsx`
+- `next-app/package.json`
+- `next-app/drizzle.config.ts`
+
+**❌ INCORRECT file paths:**
+- `src/app/page.tsx` (missing next-app prefix)
+- `package.json` (missing next-app prefix)
+- `app/page.tsx` (missing next-app/src prefix)
+
+## Directory Navigation
+
+When referencing directories in commands or file operations:
+- Always include the `next-app/` prefix for any application-related paths
+- Use relative paths from the workspace root when possible
+- Remember that all npm commands, Next.js commands, and build tools operate from within the `next-app/` directory
+
+## Key Directories
+
+- **Application Code:** `next-app/src/`
+- **Components:** `next-app/src/components/`
+- **Database:** `next-app/src/db/`
+- **Actions:** `next-app/src/lib/actions/`
+- **Pages:** `next-app/src/app/`
+- **Config Files:** `next-app/` (package.json, next.config.ts, etc.)
