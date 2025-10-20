@@ -261,15 +261,22 @@ export async function deleteDeck(deckId: number): Promise<void> {
   const { userId } = await auth();
   
   if (!userId) {
+    console.error("Delete deck failed: Unauthorized");
     throw new Error("Unauthorized");
   }
   
+  console.log(`Attempting to delete deck ${deckId} for user ${userId}`);
+  
   // Verify ownership before deletion
   await getDeckById(deckId);
+  console.log(`Ownership verified for deck ${deckId}`);
   
-  await db.delete(decksTable)
+  // Delete the deck (cascade will handle cards automatically)
+  const result = await db.delete(decksTable)
     .where(and(
       eq(decksTable.id, deckId),
       eq(decksTable.userId, userId)
     ));
+  
+  console.log(`Deck ${deckId} deleted successfully`);
 }

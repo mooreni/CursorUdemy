@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { AddDeckDialog } from "@/components/AddDeckDialog";
 import { Plus, BookOpen } from "lucide-react";
 import { truncateText } from "@/lib/utils";
 
@@ -21,9 +23,29 @@ export default async function DashboardPage() {
           <p className="text-muted-foreground">Welcome to your dashboard</p>
         </header>
 
-        {/* Recent Decks */}
+        {/* Decks */}
         <div className="mt-8">
-          <h2 className="text-2xl font-bold mb-4">Recent Decks</h2>
+          <div className="flex items-center gap-4 mb-6">
+            <h2 className="text-2xl font-bold">Decks</h2>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div>
+                    <AddDeckDialog 
+                      triggerButton={
+                        <Button size="sm" className="w-8 h-8 p-0">
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      }
+                    />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Add Deck</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
           {recentDecks.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {recentDecks.map((deck) => (
@@ -74,47 +96,6 @@ export default async function DashboardPage() {
           )}
         </div>
 
-        <Separator className="my-8" />
-
-        {/* Quick Actions */}
-        <div className="mt-8">
-          <h2 className="text-2xl font-bold mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                  <Plus className="h-5 w-5" />
-                  Create New Deck
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground mb-4">Start building a new flashcard deck</p>
-                <Button asChild variant="default">
-                  <Link href="/decks/create">
-                    Create Deck
-                  </Link>
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                  <BookOpen className="h-5 w-5" />
-                  Browse Decks
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground mb-4">View and manage your existing decks</p>
-                <Button asChild variant="secondary">
-                  <Link href="/decks">
-                    View Decks
-                  </Link>
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
       </div>
     </div>
     );

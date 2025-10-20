@@ -1,15 +1,27 @@
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { getDeckWithCards } from "@/db/queries/deck-queries";
+import { deleteDeckFormAction } from "@/lib/actions/deck-actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { AddCardDialog } from "@/components/AddCardDialog";
 import { EditDeckDialog } from "@/components/EditDeckDialog";
 import { FlashcardModal } from "@/components/FlashcardModal";
-import { ArrowLeft, BookOpen, Plus } from "lucide-react";
+import { ArrowLeft, BookOpen, Plus, Trash2 } from "lucide-react";
 
 interface DeckPageProps {
   params: {
@@ -67,6 +79,47 @@ export default async function DeckPage({ params }: DeckPageProps) {
                   </div>
                   <div className="flex items-center gap-2">
                     <EditDeckDialog deck={deck} />
+                    <AlertDialog>
+                      <TooltipProvider delayDuration={0}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <AlertDialogTrigger asChild>
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Delete Deck</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete the deck "{deck.title}" 
+                            and all {cards.length} {cards.length === 1 ? 'card' : 'cards'} inside it.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <form action={deleteDeckFormAction} className="contents">
+                          <input type="hidden" name="deckId" value={parsedDeckId} />
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <Button 
+                              type="submit"
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Delete Deck
+                            </Button>
+                          </AlertDialogFooter>
+                        </form>
+                      </AlertDialogContent>
+                    </AlertDialog>
                     <Badge variant="secondary" className="text-sm">
                       {cards.length} {cards.length === 1 ? 'card' : 'cards'}
                     </Badge>
@@ -118,7 +171,7 @@ export default async function DeckPage({ params }: DeckPageProps) {
             </div>
 
             {cards.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {cards.map((card) => (
                   <FlashcardModal key={card.id} card={card} />
                 ))}

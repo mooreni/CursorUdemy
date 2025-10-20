@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Edit } from "lucide-react";
+import { Plus } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -20,48 +20,32 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { updateCardAction } from "@/lib/actions/card-actions";
+import { createDeckAction } from "@/lib/actions/deck-actions";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 
 // Client-side form schema (matches the server-side schema)
 const formSchema = z.object({
-  front: z.string().min(1, "Front text is required"),
-  back: z.string().min(1, "Back text is required"),
+  title: z.string().min(1, "Title is required").max(100, "Title too long"),
+  description: z.string().max(500, "Description too long").optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
-interface Card {
-  id: number;
-  front: string;
-  back: string;
-  deckId: number;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-interface EditCardDialogProps {
-  card: Card;
+interface AddDeckDialogProps {
   triggerButton?: React.ReactNode;
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
 }
 
-export function EditCardDialog({ card, triggerButton, open: externalOpen, onOpenChange: externalOnOpenChange }: EditCardDialogProps) {
-  const [internalOpen, setInternalOpen] = useState(false);
+export function AddDeckDialog({ triggerButton }: AddDeckDialogProps) {
+  const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  // Use external state if provided, otherwise use internal state
-  const open = externalOpen !== undefined ? externalOpen : internalOpen;
-  const setOpen = externalOnOpenChange || setInternalOpen;
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      front: card.front,
-      back: card.back,
+      title: "",
+      description: "",
     },
   });
 
@@ -69,20 +53,20 @@ export function EditCardDialog({ card, triggerButton, open: externalOpen, onOpen
     setIsSubmitting(true);
     
     try {
-      const result = await updateCardAction({
-        id: card.id,
-        front: values.front,
-        back: values.back,
+      const result = await createDeckAction({
+        title: values.title,
+        description: values.description || undefined,
       });
 
       if (result.success) {
-        // Close dialog on success
+        // Reset form and close dialog on success
+        form.reset();
         setOpen(false);
       } else {
         // Show error message
         form.setError("root", {
           type: "manual",
-          message: result.error || "Failed to update card",
+          message: result.error || "Failed to create deck",
         });
       }
     } catch (error) {
@@ -95,26 +79,23 @@ export function EditCardDialog({ card, triggerButton, open: externalOpen, onOpen
     }
   }
 
-
   const defaultTrigger = (
-    <Button variant="outline" size="sm">
-      <Edit className="h-4 w-4 mr-2" />
-      Edit
+    <Button>
+      <Plus className="h-4 w-4 mr-2" />
+      Add Deck
     </Button>
   );
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      {triggerButton && externalOpen === undefined && (
-        <DialogTrigger asChild>
-          {triggerButton || defaultTrigger}
-        </DialogTrigger>
-      )}
+      <DialogTrigger asChild>
+        {triggerButton || defaultTrigger}
+      </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Edit Card</DialogTitle>
+          <DialogTitle>Add New Deck</DialogTitle>
           <DialogDescription>
-            Update the front and back text of this flashcard.
+            Create a new flashcard deck by entering a title and optional description.
           </DialogDescription>
         </DialogHeader>
 
@@ -122,13 +103,13 @@ export function EditCardDialog({ card, triggerButton, open: externalOpen, onOpen
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
-              name="front"
+              name="title"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Front (Question)</FormLabel>
+                  <FormLabel>Title</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="Enter the question or prompt..."
+                      placeholder="Enter deck title..."
                       {...field}
                       disabled={isSubmitting}
                     />
@@ -140,13 +121,13 @@ export function EditCardDialog({ card, triggerButton, open: externalOpen, onOpen
 
             <FormField
               control={form.control}
-              name="back"
+              name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Back (Answer)</FormLabel>
+                  <FormLabel>Description (Optional)</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="Enter the answer or explanation..."
+                      placeholder="Enter deck description..."
                       {...field}
                       disabled={isSubmitting}
                     />
@@ -172,7 +153,7 @@ export function EditCardDialog({ card, triggerButton, open: externalOpen, onOpen
                 Cancel
               </Button>
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Updating..." : "Update Card"}
+                {isSubmitting ? "Creating..." : "Create Deck"}
               </Button>
             </div>
           </form>
