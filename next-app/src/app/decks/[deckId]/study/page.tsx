@@ -38,7 +38,8 @@ export default async function StudyPage({ params }: StudyPageProps) {
     }
 
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
           {/* Header with back button */}
           <div className="flex items-center justify-between mb-6">
@@ -64,6 +65,7 @@ export default async function StudyPage({ params }: StudyPageProps) {
 
           {/* Study Interface */}
           <StudyInterface cards={cards} deckId={parsedDeckId} />
+        </div>
         </div>
       </div>
     );

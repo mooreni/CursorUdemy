@@ -201,10 +201,26 @@ export async function getRecentDecks(limit: number = 5): Promise<DeckWithCardCou
  * @returns The created deck
  */
 export async function createDeck(input: CreateDeckInput): Promise<Deck> {
-  const { userId } = await auth();
+  const { userId, has } = await auth();
   
   if (!userId) {
     throw new Error("Unauthorized");
+  }
+  
+  // Check billing restrictions for deck limits
+  const hasUnlimitedDecks = has({ feature: 'unlimited_decks' });
+  
+  if (!hasUnlimitedDecks) {
+    // Get current deck count for free users
+    const deckCountResult = await db.select({
+      count: sql<number>`count(*)`.as('count')
+    }).from(decksTable).where(eq(decksTable.userId, userId));
+    
+    const currentDeckCount = deckCountResult[0]?.count || 0;
+    
+    if (currentDeckCount >= 3) {
+      throw new Error("Free users are limited to 3 decks. Upgrade to Pro for unlimited decks.");
+    }
   }
   
   // Validate input with Zod

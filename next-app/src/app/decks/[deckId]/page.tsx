@@ -54,7 +54,8 @@ export default async function DeckPage({ params }: DeckPageProps) {
     }
 
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
           {/* Header with back button */}
           <div className="flex items-center gap-4 mb-6">
@@ -198,6 +199,7 @@ export default async function DeckPage({ params }: DeckPageProps) {
               </Card>
             )}
           </div>
+        </div>
         </div>
       </div>
     );

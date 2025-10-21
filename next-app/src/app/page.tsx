@@ -15,7 +15,7 @@ import {
 export default async function Home() {
   // Authentication and redirects are now handled by middleware
   return (
-    <div className="flex items-center justify-center min-h-[calc(100vh-189px)] px-4">
+    <div className="flex items-center justify-center min-h-[calc(100vh-189px)] px-4 bg-background">
       <Card className="w-full max-w-md text-center">
         <CardHeader className="space-y-4">
           <CardTitle className="text-4xl md:text-6xl font-bold">

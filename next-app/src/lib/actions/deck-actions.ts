@@ -66,6 +66,17 @@ export async function deleteDeckFormAction(formData: FormData) {
   try {
     await deleteDeckAction(parseInt(deckId, 10));
   } catch (error) {
+    // Check if this is a redirect error and re-throw it as-is
+    if (error instanceof Error && error.message === "NEXT_REDIRECT") {
+      throw error;
+    }
+    
+    // Check for redirect error by digest (Next.js internal)
+    if (error && typeof error === 'object' && 'digest' in error && 
+        typeof error.digest === 'string' && error.digest.startsWith('NEXT_REDIRECT')) {
+      throw error;
+    }
+    
     console.error("Error in deleteDeckFormAction:", error);
     throw error;
   }

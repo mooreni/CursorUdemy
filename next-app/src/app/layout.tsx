@@ -33,14 +33,17 @@ export default function RootLayout({
       appearance={{ baseTheme: dark }}
       afterSignInUrl="/dashboard"
       afterSignUpUrl="/dashboard"
+      localization={{
+        locale: "en-US"
+      }}
     >
-      <html lang="en" className="dark bg-slate-900">
+      <html lang="en" className="dark">
         <body
-          className={`${poppins.variable} antialiased font-sans bg-slate-900 text-foreground`}
+          className={`${poppins.variable} antialiased font-sans bg-background text-foreground`}
         >
-          <header className="border-b border-border bg-black relative z-10">
+          <header className="border-b border-border bg-card relative z-10">
             <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-              <h1 className="text-xl font-semibold text-white">FlashCards</h1>
+              <h1 className="text-xl font-semibold text-card-foreground">FlashCards</h1>
               <div className="flex items-center gap-4">
                 <SignedOut>
                   <SignInButton mode="modal">
@@ -60,7 +63,7 @@ export default function RootLayout({
               </div>
             </div>
           </header>
-          <main className="bg-slate-900 min-h-screen">
+          <main className="bg-background min-h-screen">
             <div className="-mt-[189px] pt-[189px]">
               {children}
             </div>
